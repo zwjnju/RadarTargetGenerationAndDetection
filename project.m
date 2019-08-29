@@ -72,21 +72,23 @@ for i=1:length(t)
     if i > 1
         pos = pos + vel * delta_t;
     end
-    R = norm(pos);
-    td(i) = 2 * R / c;
+    r_t(i) = norm(pos);
+    td(i) = 2 * r_t(i) / c;
     
     % *%TODO* :
     %For each time sample we need update the transmitted and
     %received signal. 
+    Tx(i) = cos(2*pi*(fc*t(i) + Slope*t(i)*t(i)));
+    Rx(i) = cos(2*pi*(fc*(t(i)-td(i)) + Slope*(t(i)-td(i))*(t(i)-td(i))));
     
-    sig = mod(t(i),Tchirp);
-    Tx(i) = cos(2*pi*(fc*sig + Slope*sig*sig/2));
-    
-    if t(i) < td(i)
-        Rx(i) = 0;
-    else
-        Rx(i) = cos(2*pi*(fc*(mod(t(i)-td(i), Tchirp)) + Slope*(mod(t(i)-td(i), Tchirp)*mod(t(i)-td(i), Tchirp) / 2))); 
-    end
+%     sig = mod(t(i),Tchirp);
+%     Tx(i) = cos(2*pi*(fc*sig + Slope*sig*sig/2));
+%     
+%     if t(i) < td(i)
+%         Rx(i) = 0;
+%     else
+%         Rx(i) = cos(2*pi*(fc*mod(t(i)-td(i), Tchirp) + Slope*mod(t(i)-td(i), Tchirp)*mod(t(i)-td(i), Tchirp) / 2)); 
+%     end
     %Rx(i) = cos(2*pi*(fc*(mod(t(i)-td(i), Tchirp)) + Slope*(mod(t(i)-td(i), Tchirp)*mod(t(i)-td(i), Tchirp) / 2))); 
     
     % *%TODO* :
@@ -169,13 +171,13 @@ figure,surf(doppler_axis,range_axis,RDM);
 
 % *%TODO* :
 %Select the number of Training Cells in both the dimensions.
-T_x = 10;
-T_y = 5;
+Td = 10;
+Tr = 5;
 % *%TODO* :
 %Select the number of Guard Cells in both dimensions around the Cell under 
 %test (CUT) for accurate estimation
-G_x = 3;
-G_y = 2;
+Gd = 3;
+Gr = 2;
 
 % *%TODO* :
 % offset the threshold by SNR value in dB
@@ -200,20 +202,20 @@ noise_level = zeros(1,1);
    % CFAR
 [M,N] = size(RDM);
 cfar = zeros(M,N);
-for i=1:M-(T_y+G_y+1)
-    for j=1:N-(T_x+G_x+1)
+for i=1:M-(Tr+Gr+1)
+    for j=1:N-(Td+Gd+1)
         noise_level = 0;
-        for p=1:T_y
-            for q=1:T_x
-                if(p<T_y-G_y-1 || q<T_x-G_x-1)
+        for p=1:Tr
+            for q=1:Td
+                if(p<Tr-Gr-1 || q<Td-Gd-1)
                     noise_level = noise_level + db2pow(RDM(i+p-1,j+q-1));
                 end
             end
         end
-        noise_level = noise_level / (T_y*T_x - (G_y+1)*(G_x+1));
+        noise_level = noise_level / (Tr*Td - (Gr+1)*(Gd+1));
         threshold = pow2db(noise_level) + offset;
-        if(RDM(i+T_y, j+T_x) > threshold)
-            cfar(i+T_y, j+T_x) = 1;
+        if(RDM(i+Tr, j+Td) > threshold)
+            cfar(i+Tr, j+Td) = 1;
         end
     end
 end
